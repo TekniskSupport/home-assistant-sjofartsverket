@@ -1,0 +1,9 @@
+{
+  "domain": "sjofartsverket",
+  "name": "Sjöfartsverket",
+  "documentation": "",
+  "dependencies": [],
+  "after_dependencies": ["http"],
+  "codeowners": ["@iesus"],
+  "requirements": []
+}

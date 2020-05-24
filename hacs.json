@@ -1,0 +1,6 @@
+{
+  "name": "Sjöfartserket",
+  "country": "SE",
+  "domains": ["sensor"],
+  "homeassistant": "0.110.2"
+}
