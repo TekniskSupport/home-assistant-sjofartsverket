@@ -28,20 +28,31 @@ CONF_LOCATION = 'location'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-    vol.Required(CONF_LOCATION, default=0): cv.string
+    vol.Required(CONF_LOCATION, default=0): cv.string,
 })
 
 SCAN_INTERVAL = timedelta(minutes=DEFAULT_INTERVAL)
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
-    name = config.get(CONF_NAME)
-    location = config.get(CONF_LOCATION)
-    method = 'GET'
-    payload = ''
-    auth = ''
+    name       = config.get(CONF_NAME)
+    location   = config.get(CONF_LOCATION)
+
+    if "," in location:
+        location = location.split(",")
+
+    if isinstance(location, list):
+        for locationId in location:
+            add_sensors(hass, config, add_devices, name, locationId, discovery_info)
+    else:
+        add_sensors(hass, config, add_devices, name, location, discovery_info)
+
+def add_sensors(hass, config, add_devices, name, location, discovery_info=None):
+    method     = 'GET'
+    payload    = ''
+    auth       = ''
     verify_ssl = DEFAULT_VERIFY_SSL
-    headers = {}
-    endpoint = _ENDPOINT + location
+    headers    = {}
+    endpoint   = _ENDPOINT + location
     rest = RestData(method, endpoint, auth, headers, payload, verify_ssl)
     rest.update()
 
@@ -99,6 +110,15 @@ class entityRepresentation(Entity):
     def update(self):
         """Get the latest data from the API and updates the state."""
         try:
+            getAttributes = [
+                "Trend",
+                "Msg",
+                "Calm",
+                "Heading",
+                "WaterLevelReference",
+                "WaterLevelOffset",
+            ]
+
             self._rest.update()
             self._result                   = json.loads(self._rest.data)
             self._name                     = self._prefix + '_' + self._location + '_' + self._data['Name']
@@ -108,6 +128,9 @@ class entityRepresentation(Entity):
                     self._state   = data['Value']
                     self._attributes.update({"type"         : data['Type']})
                     self._attributes.update({"last_modified": data['Updated']})
+                    for attribute in data:
+                        if attribute in getAttributes and data[attribute]:
+                            self._attributes.update({attribute: data[attribute]})
         except TypeError as e:
             self._result = None
             _LOGGER.error(
