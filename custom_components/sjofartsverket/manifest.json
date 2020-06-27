@@ -3,7 +3,7 @@
   "name": "Sjöfartsverket",
   "documentation": "",
   "dependencies": [],
-  "after_dependencies": ["http"],
+  "after_dependencies": ["http", "rest"],
   "codeowners": ["@iesus"],
   "requirements": []
 }
