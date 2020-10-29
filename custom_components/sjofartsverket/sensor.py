@@ -33,7 +33,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 SCAN_INTERVAL = timedelta(minutes=DEFAULT_INTERVAL)
 
-def setup_platform(hass, config, add_devices, discovery_info=None):
+async def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     name       = config.get(CONF_NAME)
     location   = config.get(CONF_LOCATION)
 
@@ -42,19 +42,20 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 
     if isinstance(location, list):
         for locationId in location:
-            add_sensors(hass, config, add_devices, name, locationId, discovery_info)
+            await add_sensors(hass, config, async_add_devices, name, locationId, discovery_info)
     else:
-        add_sensors(hass, config, add_devices, name, location, discovery_info)
+        await add_sensors(hass, config, async_add_devices, name, location, discovery_info)
 
-def add_sensors(hass, config, add_devices, name, location, discovery_info=None):
+async def add_sensors(hass, config, async_add_devices, name, location, discovery_info=None):
     method     = 'GET'
     payload    = ''
-    auth       = ''
+    auth       = None
     verify_ssl = DEFAULT_VERIFY_SSL
     headers    = {}
+    timeout    = 5000
     endpoint   = _ENDPOINT + location
-    rest = RestData(method, endpoint, auth, headers, payload, verify_ssl)
-    rest.update()
+    rest = RestData(method, endpoint, auth, headers, payload, verify_ssl, timeout)
+    await rest.async_update()
 
     if rest.data is None:
         _LOGGER.error("Unable to fetch data from Sjöfartsverket")
@@ -65,7 +66,7 @@ def add_sensors(hass, config, add_devices, name, location, discovery_info=None):
     location = restData['GetSingleStationResult']['Name']
     for data in restData['GetSingleStationResult']['Samples']:
         sensors.append(entityRepresentation(rest, name, location, data))
-    add_devices(sensors, True)
+    async_add_devices(sensors, True)
 
 # pylint: disable=no-member
 class entityRepresentation(Entity):
@@ -107,7 +108,7 @@ class entityRepresentation(Entity):
     def icon(self):
         return 'mdi:ferry'
 
-    def update(self):
+    async def async_update(self):
         """Get the latest data from the API and updates the state."""
         try:
             getAttributes = [
@@ -119,7 +120,7 @@ class entityRepresentation(Entity):
                 "WaterLevelOffset",
             ]
 
-            self._rest.update()
+            await self._rest.async_update()
             self._result                   = json.loads(self._rest.data)
             self._name                     = self._prefix + '_' + self._location + '_' + self._data['Name']
             for data in self._result['GetSingleStationResult']['Samples']:
