@@ -13,7 +13,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
 from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.components.rest.sensor import RestData
+from homeassistant.components.rest import RestData
 from homeassistant.const import (CONF_NAME)
 from dateutil import parser
 from datetime import datetime
