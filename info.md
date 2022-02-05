@@ -7,6 +7,7 @@ Add the following to resources in your sensors.yaml:
 ```yaml
 - platform: sjofartsverket
   location: 123
+  number_format: True
 ```
 
 Or if you want multiple locations
