@@ -4,6 +4,7 @@ Get data from sjofartsverket.se
 
 import logging
 import json
+import re
 
 from collections import namedtuple
 from datetime import timedelta
@@ -21,32 +22,35 @@ from datetime import datetime
 _LOGGER = logging.getLogger(__name__)
 _ENDPOINT = 'https://services.viva.sjofartsverket.se:8080/output/vivaoutputservice.svc/vivastation/'
 
-DEFAULT_NAME = 'Sjofarsverket'
+DEFAULT_NAME = 'Sjofartsverket'
 DEFAULT_INTERVAL = 5
 DEFAULT_VERIFY_SSL = True
 CONF_LOCATION = 'location'
+NUMERIC_VALUES = 'numeric_values'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Required(CONF_LOCATION, default=0): cv.string,
+    vol.Required(NUMERIC_VALUES, default=False): cv.boolean,
 })
 
 SCAN_INTERVAL = timedelta(minutes=DEFAULT_INTERVAL)
 
 async def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
-    name       = config.get(CONF_NAME)
-    location   = config.get(CONF_LOCATION)
+    name = config.get(CONF_NAME)
+    location = config.get(CONF_LOCATION)
+    force_numeric = config.get(NUMERIC_VALUES)
 
     if "," in location:
         location = location.split(",")
 
     if isinstance(location, list):
         for locationId in location:
-            await add_sensors(hass, config, async_add_devices, name, locationId, discovery_info)
+            await add_sensors(hass, config, async_add_devices, name, locationId, force_numeric, discovery_info)
     else:
-        await add_sensors(hass, config, async_add_devices, name, location, discovery_info)
+        await add_sensors(hass, config, async_add_devices, name, location, force_numeric, discovery_info)
 
-async def add_sensors(hass, config, async_add_devices, name, location, discovery_info=None):
+async def add_sensors(hass, config, async_add_devices, name, location, force_numeric, discovery_info=None):
     method     = 'GET'
     payload    = ''
     auth       = None
@@ -67,19 +71,20 @@ async def add_sensors(hass, config, async_add_devices, name, location, discovery
     sensors = []
     location = restData['GetSingleStationResult']['Name']
     for data in restData['GetSingleStationResult']['Samples']:
-        sensors.append(entityRepresentation(rest, name, location, data))
+        sensors.append(entityRepresentation(rest, name, location, force_numeric, data))
     async_add_devices(sensors, True)
 
 # pylint: disable=no-member
 class entityRepresentation(Entity):
     """Representation of a sensor."""
 
-    def __init__(self, rest, prefix, location, data):
+    def __init__(self, rest, prefix, location, force_numeric, data):
         """Initialize a sensor."""
-        self._rest       = rest
-        self._prefix     = prefix
-        self._location   = location
-        self._data       = data
+        self._rest = rest
+        self._prefix = prefix
+        self._location = location
+        self._force_numeric = force_numeric
+        self._data = data
         self._attributes = {}
 
     @property
@@ -127,8 +132,17 @@ class entityRepresentation(Entity):
             self._name                     = self._prefix + '_' + self._location + '_' + self._data['Name']
             for data in self._result['GetSingleStationResult']['Samples']:
                 if self._name == self._prefix + '_' + self._location + '_' + data['Name']:
-                    self._unit    = data['Unit']
-                    self._state   = data['Value']
+                    if (self._force_numeric):
+                        try:
+                            extractedValue = float(re.findall("[\d\.]+", data['Value'])[0])
+                            self._state   = extractedValue
+                            self._attributes.update({"Original": data['Value']})
+                            self._attributes.update({"Additional": data['Value'].replace(str(extractedValue),'')})
+                        except:
+                            self._state   = data['Value']
+                    else:
+                        self._state   = data['Value']
+                    self._unit = data['Unit']
                     self._attributes.update({"type"         : data['Type']})
                     self._attributes.update({"last_modified": data['Updated']})
                     for attribute in data:
