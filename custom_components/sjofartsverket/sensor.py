@@ -54,13 +54,14 @@ async def add_sensors(hass, config, async_add_devices, name, location, force_num
     method     = 'GET'
     payload    = ''
     auth       = None
+    encoding   = 'utf-8'
     verify_ssl = DEFAULT_VERIFY_SSL
     headers    = {}
     params     = {}
     timeout    = 5000
     endpoint   = _ENDPOINT + location
 
-    rest = RestData(hass, method, endpoint, auth, headers, params, payload, verify_ssl, timeout)
+    rest = RestData(hass, method, endpoint, auth, encoding, headers, params, payload, verify_ssl, timeout)
     await rest.async_update()
 
     if rest.data is None:
