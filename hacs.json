@@ -2,5 +2,5 @@
   "name": "Sjöfartsverket",
   "country": "SE",
   "domains": ["sensor"],
-  "homeassistant": "2023.4.1"
+  "homeassistant": "2023.5.2"
 }

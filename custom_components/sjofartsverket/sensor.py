@@ -15,6 +15,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.components.rest import RestData
+from homeassistant.util.ssl import SSLCipherList
 from homeassistant.const import (CONF_NAME)
 from dateutil import parser
 from datetime import datetime
@@ -25,6 +26,7 @@ _ENDPOINT = 'https://services.viva.sjofartsverket.se:8080/output/vivaoutputservi
 DEFAULT_NAME = 'Sjofartsverket'
 DEFAULT_INTERVAL = 5
 DEFAULT_VERIFY_SSL = True
+DEFAULT_SSL_CIPHER_LIST = SSLCipherList.PYTHON_DEFAULT
 CONF_LOCATION = 'location'
 NUMERIC_VALUES = 'numeric_values'
 
@@ -56,12 +58,13 @@ async def add_sensors(hass, config, async_add_devices, name, location, force_num
     encoding   = 'utf-8'
     auth       = None
     verify_ssl = DEFAULT_VERIFY_SSL
+    ssl_cipher_list = DEFAULT_SSL_CIPHER_LIST
     headers    = {}
     params     = {}
     timeout    = 5000
     endpoint   = _ENDPOINT + location
 
-    rest = RestData(hass, method, endpoint, encoding, auth, headers, params, payload, verify_ssl, timeout)
+    rest = RestData(hass, method, endpoint, encoding, auth, headers, params, payload, verify_ssl, ssl_cipher_list, timeout)
     await rest.async_update()
 
     if rest.data is None:
