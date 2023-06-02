@@ -138,7 +138,7 @@ class entityRepresentation(Entity):
                 if self._name == self._prefix + '_' + self._location + '_' + data['Name']:
                     if (self._force_numeric):
                         try:
-                            extractedValue = float(re.findall("[\d\.]+", data['Value'])[0])
+                            extractedValue = float(re.findall("[\d\.\-]+", data['Value'])[0])
                             self._state   = extractedValue
                             self._attributes.update({"Original": data['Value']})
                             self._attributes.update({"Additional": data['Value'].replace(str(extractedValue),'')})
